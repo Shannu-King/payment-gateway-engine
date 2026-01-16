@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <h2>Complete Your Payment</h2>
+  <button onclick="sendSuccess()">Pay with UPI (Simulate Success)</button>
+  <button onclick="sendFailure()">Simulate Failure</button>
+
+  <script>
+    function sendSuccess() {
+      window.parent.postMessage({
+        type: 'payment_success',
+        data: { transaction_id: 'tx_123', status: 'captured' }
+      }, '*');
+    }
+    
+    function sendFailure() {
+      window.parent.postMessage({
+        type: 'payment_failed',
+        data: { error: 'User cancelled' }
+      }, '*');
+    }
+  </script>
+</body>
+</html>

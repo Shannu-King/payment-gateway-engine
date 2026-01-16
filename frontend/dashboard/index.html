@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Merchant Dashboard | Payment Gateway</title>
+    <style>
+        body { font-family: sans-serif; padding: 40px; background: #f4f7f9; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
+        .status-success { color: green; font-weight: bold; }
+        .status-failed { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Merchant Management Console</h1>
+
+    <div class="card">
+        <h3>Webhook Configuration</h3>
+        <p>Set the URL where we should send payment notifications.</p>
+        <input type="text" id="webhook-url" data-test-id="webhook-url-input" placeholder="https://your-app.com/api/webhook" style="width: 70%; padding: 10px;">
+        <button id="save-webhook" data-test-id="save-webhook-button" style="padding: 10px 20px; cursor: pointer;">Save Settings</button>
+    </div>
+
+    <div class="card">
+        <h3>Webhook Delivery Logs</h3>
+        <table data-test-id="webhook-logs-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Event</th>
+                    <th>Status</th>
+                    <th>Attempts</th>
+                    <th>Response Code</th>
+                </tr>
+            </thead>
+            <tbody id="logs-body">
+                </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Fetch logs on load
+        async function loadLogs() {
+            const res = await fetch('http://localhost:8000/api/v1/webhooks');
+            const result = await res.json();
+            const body = document.getElementById('logs-body');
+            body.innerHTML = result.data.map(log => `
+                <tr>
+                    <td>${new Date(log.created_at).toLocaleString()}</td>
+                    <td>${log.event}</td>
+                    <td class="status-${log.status}">${log.status.toUpperCase()}</td>
+                    <td>${log.attempts}</td>
+                    <td>${log.response_code || 'N/A'}</td>
+                </tr>
+            `).join('');
+        }
+        loadLogs();
+        setInterval(loadLogs, 5000); // Auto-refresh for evaluation
+    </script>
+</body>
+</html>

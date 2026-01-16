@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; }
+        .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 30px; }
+        button { padding: 15px; cursor: pointer; border-radius: 5px; border: 1px solid #ccc; font-size: 16px; }
+        .upi-btn { background: #673ab7; color: white; border: none; }
+        .card-btn { background: #2196f3; color: white; border: none; }
+    </style>
+</head>
+<body>
+    <h3>Select Payment Method</h3>
+    <div class="btn-group">
+        <button data-test-id="upi-payment-button" class="upi-btn" onclick="processPayment('upi')">Pay via UPI</button>
+        <button data-test-id="card-payment-button" class="card-btn" onclick="processPayment('card')">Pay via Credit/Debit Card</button>
+    </div>
+
+    <script>
+        async function processPayment(method) {
+            const params = new URLSearchParams(window.location.search);
+            const orderId = params.get('order_id');
+
+            const res = await fetch('http://localhost:8000/api/v1/payments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    order_id: orderId,
+                    amount: 50000, // Hardcoded for demo
+                    method: method
+                })
+            });
+
+            const data = await res.json();
+
+            // Notify Parent SDK via postMessage
+            window.parent.postMessage({
+                type: 'payment_initiated',
+                data: { payment_id: data.id, status: 'pending' }
+            }, '*');
+
+            document.body.innerHTML = "<h3>Processing...</h3><p>You can close this window. We will notify the merchant once confirmed.</p>";
+        }
+    </script>
+</body>
+</html>

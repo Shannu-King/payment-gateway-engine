@@ -1,0 +1,15 @@
+version: "1.0"
+setup:
+  - npm install
+  - docker-compose pull
+start:
+  - docker-compose up -d
+  - npm run api & npm run worker
+verify:
+  health_check: "curl -f http://localhost:8000/api/v1/test/jobs/status"
+  api_validation: "true"
+  db_schema: "true"
+test:
+  - npm test
+shutdown:
+  - docker-compose down

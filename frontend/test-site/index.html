@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Awesome Store</title>
+</head>
+<body style="text-align: center; padding: 100px;">
+    <h1>Checkout Page</h1>
+    <p>Item: Professional Subscription - ₹500.00</p>
+    
+    <button id="pay-now" style="padding: 20px 40px; background: #000; color: #fff; cursor: pointer;">
+        Pay Now
+    </button>
+
+    <script src="http://localhost:3001/checkout.js"></script>
+    
+    <script>
+        const gateway = new PaymentGateway({
+            key: 'key_test_abc123',
+            orderId: 'ORDER_' + Date.now(),
+            onSuccess: (data) => alert('Payment Success: ' + data.payment_id),
+            onFailure: (err) => alert('Payment Failed!')
+        });
+
+        document.getElementById('pay-now').onclick = () => gateway.open();
+    </script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres_gateway
+    environment:
+      - POSTGRES_USER=gateway_user
+      - POSTGRES_PASSWORD=gateway_pass
+      - POSTGRES_DB=payment_gateway
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_gateway
+    ports:
+      - "6379:6379"
+
+  dashboard:
+    image: nginx:alpine
+    container_name: dashboard_ui
+    volumes:
+      - ./frontend/dashboard:/usr/share/nginx/html
+    ports:
+      - "3000:80"
+
+  checkout:
+    image: nginx:alpine
+    container_name: checkout_ui
+    volumes:
+      - ./frontend/checkout:/usr/share/nginx/html
+      - ./checkout-widget/dist/checkout.js:/usr/share/nginx/html/checkout.js
+    ports:
+      - "3001:80"
+
+  test-site:
+    image: nginx:alpine
+    container_name: merchant_test_site
+    volumes:
+      - ./frontend/test-site:/usr/share/nginx/html
+    ports:
+      - "8080:80"
+    environment:
+      - POSTGRES_USER=gateway_user
+      - POSTGRES_PASSWORD=gateway_pass
+      - POSTGRES_DB=payment_gateway
+  api:
+    image: node:18-alpine
+    container_name: payment_api
+    working_dir: /usr/src/app
+    volumes:
+      - ./:/usr/src/app
+    command: sh -c "npm install --no-audit --no-fund || true; node backend/src/server.js"
+    environment:
+      - DB_USER=gateway_user
+      - DB_PASSWORD=gateway_pass
+      - DB_NAME=payment_gateway
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "8000:8000"
