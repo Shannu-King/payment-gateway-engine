@@ -1,5 +1,5 @@
 const express = require('express');
-const { paymentQueue, refundQueue } = require('./config/queue');
+const { paymentQueue, refundQueue, webhookQueue } = require('./config/queue');
 const db = require('./config/db');
 const { v4: uuidv4 } = require('uuid');
 const cors = require('cors');
@@ -152,4 +152,38 @@ app.get('/api/v1/test/jobs/status', async (req, res) => {
 const PORT = 8000;
 app.listen(PORT, () => {
     console.log(`🚀 Payment API live on port ${PORT}`);
+});
+
+// List webhook logs (paginated) - requires auth
+app.get('/api/v1/webhooks', authMiddleware, async (req, res) => {
+    const limit = parseInt(req.query.limit || '10');
+    const offset = parseInt(req.query.offset || '0');
+    try {
+        const rows = (await db.query('SELECT id, event, status, attempts, last_attempt_at, response_code, created_at FROM webhook_logs WHERE merchant_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3', [req.merchantId, limit, offset])).rows;
+        const total = (await db.query('SELECT COUNT(1) as cnt FROM webhook_logs WHERE merchant_id = $1', [req.merchantId])).rows[0].cnt;
+        res.json({ data: rows, total: parseInt(total), limit, offset });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Retry a webhook log entry (manual retry) - resets attempts and enqueues a delivery
+app.post('/api/v1/webhooks/:webhook_id/retry', authMiddleware, async (req, res) => {
+    const { webhook_id } = req.params;
+    try {
+        const w = (await db.query('SELECT * FROM webhook_logs WHERE id = $1 AND merchant_id = $2', [webhook_id, req.merchantId])).rows[0];
+        if (!w) return res.status(404).json({ error: 'Webhook log not found' });
+
+        // Reset attempts and set status pending
+        await db.query('UPDATE webhook_logs SET status = $1, attempts = 0, next_retry_at = NOW(), response_code = NULL, response_body = NULL WHERE id = $2', ['pending', webhook_id]);
+
+        // Enqueue delivery job using payload when available
+        const payload = w.payload ? JSON.parse(w.payload) : null;
+        const paymentId = payload?.data?.payment?.id || null;
+
+        await webhookQueue.add('send-webhook', { event: w.event, paymentId, merchantId: w.merchant_id, attempt: 1 });
+        res.json({ id: webhook_id, status: 'pending', message: 'Webhook retry scheduled' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });

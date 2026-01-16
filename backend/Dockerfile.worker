@@ -1,0 +1,13 @@
+FROM node:18-alpine
+WORKDIR /usr/src/app
+
+# Copy package files and install dependencies
+COPY package.json package-lock.json ./
+RUN npm install --no-audit --no-fund
+
+# Copy repository files
+COPY . /usr/src/app
+
+ENV NODE_ENV=production
+
+CMD ["node", "backend/src/start_workers_only.js"]

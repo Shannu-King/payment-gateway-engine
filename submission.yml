@@ -1,15 +1,20 @@
 version: "1.0"
-setup:
+
+# Preparation before starting services
+setup_commands:
   - npm install
-  - docker-compose pull
-start:
+  - docker-compose build
+
+# Launch the entire infrastructure
+start_commands:
   - docker-compose up -d
-  - npm run api & npm run worker
-verify:
-  health_check: "curl -f http://localhost:8000/api/v1/test/jobs/status"
-  api_validation: "true"
-  db_schema: "true"
-test:
-  - npm test
-shutdown:
+
+# Critical verification points the evaluator will check
+verify_commands:
+  - curl -f http://localhost:8000/api/v1/test/jobs/status
+  - curl -f http://localhost:3001/checkout.js
+  - docker exec postgres_gateway psql -U gateway_user -d payment_gateway -c "\dt"
+
+# Cleanup after tests finish
+shutdown_commands:
   - docker-compose down

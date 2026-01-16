@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS payments (
     order_id VARCHAR(255) NOT NULL,
     amount INTEGER NOT NULL,
     status VARCHAR(20) DEFAULT 'pending',
+    captured BOOLEAN DEFAULT false,
     method VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
